@@ -6,7 +6,13 @@ Aplikace vyžaduje iOS 16 nebo novější. Chat otevírá v aplikaci, externí o
 
 1. Nahraj složku `FnokChatIOS` a soubor `.github/workflows/fnokchat-ios.yml` na výchozí větev repozitáře na GitHubu. Soubor workflow patří do `.github/workflows` v kořeni repozitáře.
 2. Otevři **Actions → FNOK Chat iPhone → Run workflow**.
-3. Pro první ověření nech volbu **Export a signed IPA for registered iPhones** vypnutou. Výsledný artefakt **FnokChat-Simulator** je určen pro simulátor Xcode na Macu.
+3. Nech zapnutou volbu **Create an unsigned IPA for signing with AltStore or Sideloadly** a vypnutou **Export a signed IPA for registered iPhones**. Spusť workflow.
+4. Po úspěšném dokončení stáhni v části **Artifacts** soubor **FnokChat-iPhone-unsigned-IPA**. Rozbal stažený ZIP; uvnitř je `FnokChat-unsigned.ipa`.
+5. IPA podepiš a nainstaluj přes [AltStore](https://altstore.io/) nebo [Sideloadly](https://sideloadly.io/) na počítači pomocí svého Apple ID. Přihlašovací údaje nezadávej do GitHub Actions. Bezplatný Apple účet obvykle vyžaduje obnovu podpisu každých 7 dní. Podle pokynů nástroje na iPhonu povol režim vývojáře a důvěřuj vývojářskému profilu.
+
+Nepodepsané IPA nejde nainstalovat přímo klepnutím na soubor. Pro tuto cestu nepotřebuješ vlastní distribuční certifikát ani placený Apple Developer Program; podpis zajistí zvolený instalační nástroj. Aplikace vyžaduje iOS 16 nebo novější.
+
+Pro sestavení pouze pro simulátor vypni obě volby. Výsledný artefakt **FnokChat-Simulator** je určen pro simulátor Xcode na Macu. Pokud zapneš podepsané IPA, má tato volba přednost před nepodepsaným IPA.
 
 [Ruční spuštění workflow v dokumentaci GitHubu](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow)
 

@@ -3,6 +3,10 @@ name: FNOK Chat iPhone
 on:
   workflow_dispatch:
     inputs:
+      unsigned_ipa:
+        description: Create an unsigned IPA for signing with AltStore or Sideloadly
+        type: boolean
+        default: true
       signed_ipa:
         description: Export a signed IPA for registered iPhones
         type: boolean
@@ -21,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Build for iPhone simulator
-        if: ${{ !inputs.signed_ipa }}
+        if: ${{ !inputs.signed_ipa && !inputs.unsigned_ipa }}
         shell: bash
         run: |
           set -euo pipefail
@@ -34,12 +38,49 @@ jobs:
             "$RUNNER_TEMP/FnokChat-Simulator.zip"
 
       - name: Upload simulator build
-        if: ${{ !inputs.signed_ipa }}
+        if: ${{ !inputs.signed_ipa && !inputs.unsigned_ipa }}
         uses: actions/upload-artifact@v7
         with:
           name: FnokChat-Simulator
           path: ${{ runner.temp }}/FnokChat-Simulator.zip
           if-no-files-found: error
+
+      - name: Build unsigned iPhone IPA
+        if: ${{ !inputs.signed_ipa && inputs.unsigned_ipa }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcodebuild -project FnokChatIOS/FnokChat.xcodeproj -scheme FnokChat \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/unsigned" CODE_SIGNING_ALLOWED=NO build
+          app="$RUNNER_TEMP/unsigned/Build/Products/Release-iphoneos/FnokChat.app"
+          test -d "$app"
+          package_dir="$(mktemp -d "$RUNNER_TEMP/fnok-ipa.XXXXXX")"
+          mkdir -p "$package_dir/Payload"
+          ditto "$app" "$package_dir/Payload/FnokChat.app"
+          cd "$package_dir"
+          ditto -c -k --keepParent Payload "$RUNNER_TEMP/FnokChat-unsigned.ipa"
+          unzip -t "$RUNNER_TEMP/FnokChat-unsigned.ipa"
+
+      - name: Upload unsigned iPhone IPA
+        if: ${{ !inputs.signed_ipa && inputs.unsigned_ipa }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: FnokChat-iPhone-unsigned-IPA
+          path: ${{ runner.temp }}/FnokChat-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Explain unsigned IPA installation
+        if: ${{ !inputs.signed_ipa && inputs.unsigned_ipa }}
+        shell: bash
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ## FNOK Chat for iPhone
+          Download **FnokChat-iPhone-unsigned-IPA** from this run's **Artifacts** and extract the ZIP to obtain **FnokChat-unsigned.ipa**.
+
+          This IPA must be signed before installation. Use AltStore or Sideloadly on your computer with your Apple ID. A free Apple account typically requires renewal every 7 days. Requires iOS 16 or newer.
+          EOF
 
       - name: Sign and export iPhone IPA
         if: ${{ inputs.signed_ipa }}
